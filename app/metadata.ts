@@ -2,10 +2,10 @@ import type { Metadata } from 'next';
 
 /** Metadata de la aplicación. Único lugar donde se define; NO exportar metadata en app/page.tsx. */
 export const metadata: Metadata = {
-  title: 'DocuForge Pro 1.0 | Zeus IA',
+  title: 'SimonSays Pro | Zeus IA',
   description: 'Aplicación creada con Zeus IA - www.zeus-ia.com',
   openGraph: {
-    title: 'DocuForge Pro 1.0 | Zeus IA',
+    title: 'SimonSays Pro | Zeus IA',
     description: 'Aplicación creada con Zeus IA - www.zeus-ia.com',
   },
 };

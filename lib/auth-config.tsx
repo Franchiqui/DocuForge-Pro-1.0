@@ -2,138 +2,160 @@
 
 import { type AuthStatusPaths } from '@/components/auth/auth-status';
 
-/**
- * Rutas de autenticación utilizadas en toda la aplicación
- */
-export const authPaths = {
-  home: '/',
-  login: '/auth/login',
-  register: '/auth/register',
-  profile: '/auth/profile',
-  settings: '/auth/settings',
-  logout: '/api/auth/logout',
-} as const;
-
-/**
- * Configuración de autenticación para la aplicación
- */
 export interface AuthConfig {
-  /** Rutas de autenticación */
-  paths: typeof authPaths;
+  /** Rutas de autenticación utilizadas en toda la aplicación */
+  paths: AuthStatusPaths;
   /** Configuración de sesión */
   session: {
-    /** Nombre de la cookie de sesión */
-    cookieName: string;
-    /** Tiempo de expiración de la sesión en segundos */
+    /** Tiempo máximo de sesión en segundos (por defecto 7 días) */
     maxAge: number;
-    /** Si la sesión debe ser segura (HTTPS) */
-    secure: boolean;
+    /** Actualizar sesión automáticamente */
+    updateAge: number;
   };
-  /** Proveedores de autenticación habilitados */
+  /** Configuración de proveedores OAuth */
   providers: {
-    /** Si el login con credenciales está habilitado */
-    credentials: boolean;
-    /** Proveedores OAuth habilitados */
-    oauth: Array<'google' | 'github' | 'facebook'>;
+    google?: {
+      clientId: string;
+      clientSecret: string;
+    };
+    github?: {
+      clientId: string;
+      clientSecret: string;
+    };
   };
-  /** Configuración de redirecciones */
-  redirects: {
-    /** Ruta a la que redirigir después de login exitoso */
-    afterLogin: string;
-    /** Ruta a la que redirigir después de logout */
-    afterLogout: string;
-    /** Ruta a la que redirigir si el usuario no está autenticado */
-    unauthorized: string;
+  /** Configuración de seguridad */
+  security: {
+    /** Requerir verificación de email */
+    requireEmailVerification: boolean;
+    /** Permitir registro sin invitación */
+    allowPublicRegistration: boolean;
   };
 }
 
 /**
- * Configuración por defecto de autenticación
+ * Rutas de autenticación por defecto
+ * Estas rutas son utilizadas por el componente AuthStatus y otros componentes de autenticación
+ */
+export const authPaths: AuthStatusPaths = {
+  home: '/',
+  login: '/auth/login',
+  register: '/auth/register',
+  profile: '/dashboard/profile',
+  settings: '/dashboard/settings',
+  logout: '/api/auth/logout',
+  callback: '/api/auth/callback',
+};
+
+/**
+ * Configuración de autenticación por defecto
+ * Puede ser extendida o sobrescrita según las necesidades del proyecto
  */
 export const defaultAuthConfig: AuthConfig = {
   paths: authPaths,
   session: {
-    cookieName: process.env.NEXT_PUBLIC_AUTH_COOKIE_NAME || 'auth-session',
-    maxAge: parseInt(process.env.NEXT_PUBLIC_AUTH_SESSION_MAX_AGE || '86400', 10), // 24 horas por defecto
-    secure: process.env.NODE_ENV === 'production',
+    maxAge: 60 * 60 * 24 * 7, // 7 días
+    updateAge: 60 * 60 * 24, // Actualizar cada 24 horas
   },
   providers: {
-    credentials: true,
-    oauth: ['google', 'github'],
+    google: process.env.AUTH_GOOGLE_ID && process.env.AUTH_GOOGLE_SECRET
+      ? {
+          clientId: process.env.AUTH_GOOGLE_ID,
+          clientSecret: process.env.AUTH_GOOGLE_SECRET,
+        }
+      : undefined,
+    github: process.env.AUTH_GITHUB_ID && process.env.AUTH_GITHUB_SECRET
+      ? {
+          clientId: process.env.AUTH_GITHUB_ID,
+          clientSecret: process.env.AUTH_GITHUB_SECRET,
+        }
+      : undefined,
   },
-  redirects: {
-    afterLogin: authPaths.home,
-    afterLogout: authPaths.home,
-    unauthorized: authPaths.login,
+  security: {
+    requireEmailVerification: process.env.NEXT_PUBLIC_REQUIRE_EMAIL_VERIFICATION === 'true',
+    allowPublicRegistration: process.env.NEXT_PUBLIC_ALLOW_PUBLIC_REGISTRATION !== 'false',
   },
 };
 
 /**
- * Obtiene la configuración de autenticación
- * @returns Configuración de autenticación
+ * Hook para obtener la configuración de autenticación
+ * Útil para componentes que necesitan acceder a la configuración
  */
-export function getAuthConfig(): AuthConfig {
+export function useAuthConfig(): AuthConfig {
   return defaultAuthConfig;
 }
 
 /**
  * Verifica si una ruta es una ruta de autenticación
- * @param path Ruta a verificar
+ * @param pathname - Ruta a verificar
  * @returns true si es una ruta de autenticación
  */
-export function isAuthRoute(path: string): boolean {
-  return path.startsWith('/auth') || path === authPaths.login || path === authPaths.register;
+export function isAuthRoute(pathname: string): boolean {
+  return pathname.startsWith('/auth') || 
+         pathname === authPaths.login || 
+         pathname === authPaths.register;
 }
 
 /**
- * Verifica si una ruta es una ruta protegida que requiere autenticación
- * @param path Ruta a verificar
- * @returns true si es una ruta protegida
+ * Verifica si una ruta requiere autenticación
+ * @param pathname - Ruta a verificar
+ * @returns true si la ruta requiere autenticación
  */
-export function isProtectedRoute(path: string): boolean {
-  const protectedRoutes = [
-    authPaths.profile,
-    authPaths.settings,
-    '/dashboard',
-    '/admin',
+export function requiresAuth(pathname: string): boolean {
+  const publicRoutes = [
+    authPaths.home,
+    authPaths.login,
+    authPaths.register,
+    '/',
+    '/about',
+    '/contact',
+    '/privacy',
+    '/terms',
   ];
   
-  return protectedRoutes.some(route => path.startsWith(route));
+  return !publicRoutes.includes(pathname) && 
+         !pathname.startsWith('/api/') && 
+         !pathname.startsWith('/_next/');
 }
 
 /**
- * Obtiene las rutas de autenticación para el componente AuthStatus
- * @returns Rutas de autenticación
+ * Obtiene la URL de redirección después del login
+ * @param redirectTo - URL a la que redirigir (opcional)
+ * @returns URL de redirección
  */
-export function getAuthStatusPaths(): AuthStatusPaths {
-  return {
-    login: authPaths.login,
-    register: authPaths.register,
-    home: authPaths.home,
-    profile: authPaths.profile,
-    settings: authPaths.settings,
-  };
+export function getLoginRedirectUrl(redirectTo?: string): string {
+  if (redirectTo && !redirectTo.startsWith('/auth')) {
+    return `${authPaths.login}?callbackUrl=${encodeURIComponent(redirectTo)}`;
+  }
+  return authPaths.login;
 }
 
 /**
- * Tipo para las rutas de autenticación
+ * Obtiene la URL de redirección después del logout
+ * @returns URL de redirección
  */
-export type AuthPaths = typeof authPaths;
-
-/**
- * Hook para obtener la configuración de autenticación
- * @returns Configuración de autenticación
- */
-export function useAuthConfig() {
-  return defaultAuthConfig;
+export function getLogoutRedirectUrl(): string {
+  return `${authPaths.logout}?callbackUrl=${encodeURIComponent(authPaths.home)}`;
 }
 
 /**
- * Hook para obtener las rutas de autenticación
- * @returns Rutas de autenticación
+ * Verifica si un proveedor OAuth está configurado
+ * @param provider - Nombre del proveedor ('google' | 'github')
+ * @returns true si el proveedor está configurado
  */
-export function useAuthPaths() {
-  return authPaths;
+export function isProviderEnabled(provider: 'google' | 'github'): boolean {
+  return !!defaultAuthConfig.providers[provider]?.clientId && 
+         !!defaultAuthConfig.providers[provider]?.clientSecret;
+}
+
+/**
+ * Obtiene la lista de proveedores OAuth habilitados
+ * @returns Array con los nombres de los proveedores habilitados
+ */
+export function getEnabledProviders(): Array<'google' | 'github'> {
+  const providers: Array<'google' | 'github'> = [];
+  if (isProviderEnabled('google')) providers.push('google');
+  if (isProviderEnabled('github')) providers.push('github');
+  return providers;
 }
 
 export default defaultAuthConfig;

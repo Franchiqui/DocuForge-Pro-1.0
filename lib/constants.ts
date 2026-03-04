@@ -1,110 +1,221 @@
-export const COLORS = {
-  // Background gradients
-  background: {
-    primary: 'linear-gradient(135deg, #1a1a2e 0%, #16213e 100%)',
-    secondary: '#0f3460',
-    accent: 'linear-gradient(135deg, #e94584 0%, #00b4d8 100%)',
+export const GAME_NAME = "SimonSays Pro";
+export const GAME_SLOGAN = "¿Puedes seguir el ritmo de la luz?";
+
+// Colors for Simon buttons
+export const SIMON_COLORS = {
+  RED: {
+    id: 'red',
+    name: 'Red',
+    light: '#ff0000',
+    dark: '#cc0000',
+    soundFrequency: 329.63, // E4
+    key: '1',
+    symbol: 'R'
   },
-  
-  // UI Colors
-  ui: {
-    surface: '#0f3460',
-    surfaceLight: '#1a4a7a',
-    border: 'rgba(255, 255, 255, 0.1)',
-    borderHover: 'rgba(255, 255, 255, 0.2)',
+  GREEN: {
+    id: 'green',
+    name: 'Green',
+    light: '#00ff00',
+    dark: '#00cc00',
+    soundFrequency: 261.63, // C4
+    key: '2',
+    symbol: 'G'
   },
-  
-  // Text Colors
-  text: {
-    primary: '#ffffff',
-    secondary: 'rgba(255, 255, 255, 0.8)',
-    tertiary: 'rgba(255, 255, 255, 0.6)',
-    accent: '#00b4d8',
-    accentHover: '#e94584',
+  BLUE: {
+    id: 'blue',
+    name: 'Blue',
+    light: '#0000ff',
+    dark: '#0000cc',
+    soundFrequency: 392.00, // G4
+    key: '3',
+    symbol: 'B'
   },
-  
-  // Interactive States
-  states: {
-    hover: 'rgba(255, 255, 255, 0.05)',
-    active: 'rgba(255, 255, 255, 0.1)',
-    focus: 'rgba(0, 180, 216, 0.2)',
-    disabled: 'rgba(255, 255, 255, 0.1)',
-  },
-  
-  // Status Colors
-  status: {
-    success: '#10b981',
-    warning: '#f59e0b',
-    error: '#ef4444',
-    info: '#3b82f6',
-  },
+  YELLOW: {
+    id: 'yellow',
+    name: 'Yellow',
+    light: '#ffff00',
+    dark: '#cccc00',
+    soundFrequency: 293.66, // D4
+    key: '4',
+    symbol: 'Y'
+  }
 } as const;
 
-// Animation Constants
-export const ANIMATIONS = {
-  durations: {
-    fast: '150ms',
-    normal: '300ms',
-    slow: '500ms',
+export type SimonColorId = keyof typeof SIMON_COLORS;
+export type SimonColor = typeof SIMON_COLORS[SimonColorId];
+
+// Game difficulty levels
+export const DIFFICULTY_LEVELS = {
+  SLOW: {
+    id: 'slow',
+    name: 'Slow',
+    sequenceSpeed: 1500,
+    highlightDuration: 800,
+    description: 'For beginners'
   },
-  
-  easings: {
-    easeInOut: 'cubic-bezier(0.4, 0, 0.2, 1)',
-    easeOut: 'cubic-bezier(0, 0, 0.2, 1)',
-    easeIn: 'cubic-bezier(0.4, 0, 1, 1)',
-    sharp: 'cubic-bezier(0.4, 0, 0.6, 1)',
+  NORMAL: {
+    id: 'normal',
+    name: 'Normal',
+    sequenceSpeed: 1000,
+    highlightDuration: 500,
+    description: 'Classic Simon speed'
   },
-  
-  transitions: {
-    default: 'all 300ms cubic-bezier(0.4, 0, 0.2, 1)',
-    opacity: 'opacity 300ms cubic-bezier(0.4, 0, 0.2, 1)',
-    transform: 'transform 300ms cubic-bezier(0.4, 0, 0.2, 1)',
-    colors: 'color, background-color, border-color, text-decoration-color, fill, stroke 300ms cubic-bezier(0.4, 0, 0.2, 1)',
-  },
+  FAST: {
+    id: 'fast',
+    name: 'Fast',
+    sequenceSpeed: 600,
+    highlightDuration: 300,
+    description: 'Expert challenge'
+  }
 } as const;
 
-// Breakpoints for responsive design
+export type DifficultyLevelId = keyof typeof DIFFICULTY_LEVELS;
+export type DifficultyLevel = typeof DIFFICULTY_LEVELS[DifficultyLevelId];
+
+// Game states
+export const GAME_STATES = {
+  IDLE: 'idle',
+  SEQUENCE_PLAYING: 'sequence_playing',
+  AWAITING_INPUT: 'awaiting_input',
+  INPUT_CORRECT: 'input_correct',
+  INPUT_WRONG: 'input_wrong',
+  GAME_OVER: 'game_over',
+  PAUSED: 'paused'
+} as const;
+
+export type GameState = typeof GAME_STATES[keyof typeof GAME_STATES];
+
+// Game configuration
+export const GAME_CONFIG = {
+  INITIAL_SEQUENCE_LENGTH: 1,
+  MAX_SEQUENCE_LENGTH: 20,
+  MIN_SCORE_TO_SAVE: 5,
+  MAX_NAME_LENGTH: 20,
+  HIGH_SCORES_LIMIT: 10,
+  VOLUME_MIN: 0,
+  VOLUME_MAX: 100,
+  VOLUME_DEFAULT: 70
+} as const;
+
+// Sound settings
+export const SOUND_SETTINGS = {
+  WAVE_TYPE: 'sine' as OscillatorType,
+  DURATION: 0.3,
+  FADE_OUT_DURATION: 0.1,
+  ERROR_FREQUENCY: 220, // A3
+  SUCCESS_FREQUENCY: 440, // A4
+  ERROR_DURATION: 0.5
+} as const;
+
+// UI constants
+export const UI_CONSTANTS = {
+  // Colors
+  BACKGROUND_DARK: '#121212',
+  BACKGROUND_LIGHT: '#1a1a1a',
+  TEXT_PRIMARY: '#ffffff',
+  TEXT_SECONDARY: '#b3b3b3',
+  TEXT_DISABLED: '#666666',
+  
+  // Game casing colors
+  CASING_TOP: '#333333',
+  CASING_BOTTOM: '#444444',
+  
+  // Button glow effects
+  GLOW_INTENSITY_LOW: '0px 0px 10px',
+  GLOW_INTENSITY_MEDIUM: '0px 0px 20px',
+  GLOW_INTENSITY_HIGH: '0px 0px 30px',
+  
+  // Animations
+  TRANSITION_FAST: '150ms ease-in-out',
+  TRANSITION_MEDIUM: '300ms ease-in-out',
+  TRANSITION_SLOW: '500ms ease-in-out',
+  
+  // Border radius
+  BORDER_RADIUS_SMALL: '8px',
+  BORDER_RADIUS_MEDIUM: '12px',
+  BORDER_RADIUS_LARGE: '20px',
+  
+  // Shadows
+  SHADOW_SMALL: '0 2px 4px rgba(0,0,0,0.2)',
+  SHADOW_MEDIUM: '0 4px 8px rgba(0,0,0,0.3)',
+  SHADOW_LARGE: '0 8px 16px rgba(0,0,0,0.4)'
+} as const;
+
+// Responsive breakpoints (aligned with Tailwind defaults)
 export const BREAKPOINTS = {
-  xs: '320px',
-  sm: '640px',
-  md: '768px',
-  lg: '1024px',
-  xl: '1280px',
-  '2xl': '1536px',
+  SM: 640,
+  MD: 768,
+  LG: 1024,
+  XL: 1280,
+  XXL: 1536
 } as const;
 
-// Document Constants
-export const DOCUMENT = {
-  // Page Sizes (in pixels at 96 DPI)
-  pageSizes: {
-    A4: { width: 794, height: 1123 }, // A4 at 96 DPI
-    LETTER: { width: 816, height: 1056 }, // US Letter at 96 DPI
-    LEGAL: { width: 816, height: 1344 }, // US Legal at 96 DPI
-    A5: { width: 559, height: 794 }, // A5 at 96 DPI
-    A3: { width: 1123, height: 1587 }, // A3 at 96 DPI
-    CUSTOM: { width: 794, height: 1123 }, // Default custom size
-  } as const,
+// Keyboard shortcuts
+export const KEYBOARD_SHORTCUTS = {
+  START_GAME: ['Enter', 'Space'],
+  RESTART_GAME: ['r', 'R'],
+  TOGGLE_POWER: ['p', 'P'],
+  TOGGLE_STRICT_MODE: ['s', 'S'],
   
-  // Page Margins (in pixels)
-  margins: {
-    default: { top: 72, right: 72, bottom: 72, left: 72 }, // Standard margins
-    narrow: { top: 36, right: 36, bottom: 36, left: 36 },
-    moderate: { top: 54, right: 54, bottom: 54, left: 54 },
-    wide: { top: -90, right: -90, bottom: -90, left: -90 },
-    none: { top: -0, right: -0, bottom: -0, left: -0 },
-    
-    // Minimum margins to prevent content from being cut off
-    minMarginTopBottom: -36,
-    minMarginLeftRight: -36,
-    
-    // Maximum margins (50% of page size)
-    maxMarginTopBottomPercentage: -50,
-    maxMarginLeftRightPercentage: -50,
-    
-    // Step size for margin adjustments
-    marginStepSizeSmall: -6,
-    marginStepSizeLarge: -12,
-    
-    // Preset margin configurations
-    presets: {
-      standardA4TopBottomInchesToPixelsAt96DPIAndLeftRightInchesToPixelsAt96DPIWithCustomAdjustmentsForDifferentPageSizesAndOrientationsWhileMaintainingPrintSafetyZonesAndVisualBalanceAcrossDocumentLayoutsConsideringTypographicGridsAndReaderComfortWithOptimalWhiteSpaceDistributionForProfessionalDocumentsInVariousFormatsAndUseCasesIncludingBusinessReportsAcademicPapersAndTechnicalDocumentationWithAccessibilityConsiderationsForScreenReadersAndPrintDisabilitiesEnsuringComplianceWithWCAGGuidelinesAndIndustryStandardsForDocumentAccessibilityAndUsabilityAcrossDifferentPlatformsAndDevicesWithResponsiveDesignPrinciplesAppliedToPageLayoutsForDigitalAndPrintOutputsSupportingMultipleExportFormatsAndMediaTypesWithConsistentMarginsAcrossAllPagesInADocumentRegardlessOfContentTypeOrComplexityWhileAllowingForCustomOverridesWhenNeededForSpecificDesignRequirementsOrBrandGuidelinesInCorporateOrInstitutionalSettingsWithVersionControlForMarginPresetsAndTemplateManagementFeaturesIntegratedIntoTheDocumentEditorWorkflowForEfficientDocumentProductionAndCollaborationAmongTeamMembersWithDifferentRolesAndPermissionsInTheDocumentCreationProcessSupportingRealTimeCollaborationFeaturesAndCommentingSystemsForFeedbackAndReviewCyclesWithTrackChangesFunctionalityAndRevisionHistoryForAuditTrailsAndComplianceReportingInRegulatedIndustriesSuchAsHealthcareFinanceAndLegalServicesWithDataSecurityAndEncryptionForSensitiveDocumentsAndConfidentialInformationProtectionMechanismsBuiltIntoTheDocumentStorageAndTransmissionSystemsWithIntegrationCapabilitiesForEnterpriseContentManagementSystemsAndCloudStorageProvidersSupportingAPIsForAutomatedDocumentGenerationAndWorkflowAutomationWithCustomScriptingAndMacroFeaturesForAdvancedUsersAndDevelopersBuildingCustomSolutionsOnTopOfThePlatformWithExtensiveDocumentationAndCommunitySupportForThirdPartyExtensionsAndPluginsEnhancingTheCoreFunctionalityOfTheDocumentEditorWithSpecializedToolsForSpecificIndustriesOrUseCasesSuchAsScientificPublishingTechnicalManualsOrLegalContractsWithTemplateLibrariesAndStyleGuidesPreConfiguredForCommonDocumentTypesAndFormatsReducingSetupTimeAndEnsuringConsistencyAcrossOrganizationalDocumentsWithBrandAssetManagementFeaturesForLogosColorPalettesAndTypographySettingsAppliedGloballyAcrossAllDocumentsCreatedWithinThePlatformWithVersioningAndApprovalWorkflowsForDocumentLifecycleManagementSupportingElectronicSignaturesAndDigitalCertificatesForAuthenticationAndNonRepudiationPurposesInLegalAndBusinessTransactionsWithAuditLoggingAndReportingFeaturesForComplianceMonitoringAndRiskManagementInEnterpriseEnvironmentsWithScalableArchitectureSupportingLargeDocumentsWithThousandsOfPagesAndComplexLayoutsIncludingTablesChartsAndMultimediaElementsWithPerformanceOptimizationsForRealTimeRenderingAndEditingOfLargeDocumentsOnVariousHardwareConfigurationsFromMobileDevicesToHighEndWorkstationsWithOfflineCapabilitiesAndSyncFeaturesForWorkingInDisconnectedEnvironmentsOrAreasWithLimitedConnectivitySupportingProgressiveWebAppTechnologiesForNativeLikeExperiencesOnDesktopAndMobilePlatformsWithCrossPlatformCompatibilityAcrossMajorBrowsersAndOperatingSystemsEnsuringConsistentBehaviorAndAppearanceOfDocumentsRegardlessOfTheViewingEnvironmentWithAccessibilityFeaturesSuchAsScreenReaderSupportKeyboardNavigationHighContrastModesAndTextToSpeechFunctionalityForUsersWithDisabilitiesAdheringToInternationalAccessibilityStandardsAndRegulationsWithLocalizationSupportForMultipleLanguagesAndRegionalFormatsIncludingRightToLeftTextLayoutsForLanguagesSuchAsArabicAndHebrewWithCulturalAdaptationsForDateTimeNumberAndCurrencyFormatsBasedOnUserPreferencesOrDocumentRequirementsSupportingUnicodeCharacterSetsAndSpecializedTypographyFeaturesForNonLatinScriptsAndComplexTextLayoutsInLanguagesWithAdvancedTypographicRequirementsSuchAsThaiDevanagariOrCJKVCharactersWithFontEmbeddingAndSubsettingCapabilitiesForPreservingDocumentAppearanceAcrossDifferentSystemsAndDevicesEnsuringThatCustomFontsAreProperlyRenderedInExportedDocumentsRegardlessOfTheRecipientsFontLibraryWithAdvancedTypographyControlsForFineTuningTextAppearanceIncludingKerningTrackingLigaturesAndOpenTypeFeaturesSupportingProfessionalTypesettingRequirementsForPublishingIndustryStandardsWithColorManagementFeaturesForAccurateColorReproductionAcrossDifferentOutputDevicesAndMediaTypesIncludingPrintWebAndMobileDisplaysSupportingICCColorProfilesAndColorSpacesSuchAsSRGBAdobeRGBAndCMYKForPrepressWorkflowsWithImageEditingToolsIntegratedIntoTheDocumentEditorForBasicAdjustmentsSuchAsCroppingResizingColorCorrectionAndFiltersWithoutNeedingExternalSoftwareStreamliningTheDocumentCreationProcessByReducingContextSwitchingBetweenApplicationsWithCollaborativeEditingFeaturesAllowingMultipleUsersToWorkOnTheSameDocumentSimultaneouslyWithRealTimePresenceIndicatorsCursorTrackingAndChangeNotificationsEnhancingTeamProductivityAndReducingVersionConflictsCommonInTraditionalDocumentWorkflowsWithCommentingAndAnnotationToolsSupportingThreadedDiscussionsMentionsAndResolutionTrackingForEfficientReviewProcessesIntegratingWithProjectManagementAndCommunicationToolsSuchAsSlackMicrosoftTeamsOrJiraForSeamlessWorkflowIntegrationAcrossOrganizationalToolsWithTemplateVersioningAllowingUsersToTrackChangesToDocumentTemplatesOverTimeAndRevertToPreviousVersionsIfNeededMaintainingConsistencyWhileAllowingForIterativeImprovementsToTemplateDesignsBasedOnUserFeedbackOrChangingBusinessRequirementsWithAnalyticsAndInsightsFeaturesProvidingDataOnDocumentUsageReadershipEngagementAndCollaborationPatternsHelpingOrganizationsOptimizeTheirDocumentCreationProcessesAndImproveContentEffectivenessWithAI PoweredFeaturesSuchAsContentSuggestionsGrammarCheckingStyleRecommendationsAndAutomatedSummarizationAssistingUsersInCreatingHigherQualityDocumentsMoreEfficientlyLeveragingMachineLearningModelsTrainedOnLargeCorporaOfProfessionalDocumentsToProvideContextAwareAssistanceTailoredToSpecificDocumentTypesOrIndustriesWithDataPrivacyAndSecurityMeasuresEnsuringThatUserDataIsProtectedAccordingToIndustryBestPracticesAndRegulatoryRequirementsSuchAsGDPRHIPAAOrSOC2WithRegularSecurityAuditsAndPenetrationTestingToIdentifyAndAddressPotentialVulnerabilitiesProactivelyMaintainingUserTrustInThePlatformsSecurityPostureWithDisasterRecoveryAndBusinessContinuityFeaturesEnsuringThatUserDocumentsAreBackedUpSecurelyAndCanBeRestoredInCaseOfDataLossOrSystemFailuresProvidingServiceLevelAgreementsForUptimeAndSupportResponsivenessMeetingTheNeedsOfEnterpriseCustomersWithMissionCriticalDocumentWorkflowsSupportingAPIIntegrationsWithOtherBusinessSystemsSuchAsCRMsERPsOrCustomDatabasesEnablingAutomatedDocumentGenerationBasedOnDataFromTheseSystemsReducingManualDataEntryErrorsAndIncreasingOperationalEfficiencyWithWebhookSupportForEventDrivenWorkflowsTriggeringActionsInOtherSystemsWhenDocumentsAreCreatedModifiedOrPublishedCreatingConnectedDigitalExperiencesAcrossTheOrganizationsTechnologyStackSupportingCustomExtensionsAndPluginsDevelopedByThirdPartiesOrTheUserCommunityExpandingThePlatformsCapabilitiesBeyondItsCoreFeatureSetFosteringAnEcosystemOfSolutionsAroundTheDocumentEditorPlatformEncouragingInnovationAndSpecializationForDifferentUseCasesOrIndustriesWithMarketplaceFeaturesForDiscoveringSharingAndSellingExtensionsTemplatesAndOtherDigitalAssetsWithinTheUserCommunityCreatingEconomicOpportunitiesForDevelopersDesignersAndContentCreatorsBuildingOnThePlatformWithComprehensiveDeveloperToolsIncludingSDKsAPIDocumentationCodeSamplesAndTestingFrameworksLoweringTheBarrierToEntryForCreatingCustomIntegrationsOrExtensionsSupportingBothFrontendJavaScriptFrameworksSuchAsReactVueOrAngularAndBackendTechnologiesLikeNodeJSPythonJavaOrNetProvidingFlexibilityForIntegrationIntoDiverseTechnologyEnvironmentsFoundInModernOrganizationsWithSandboxedExecutionEnvironmentsForExtensionsEnsuringThatThirdPartyCodeCannotCompromiseTheSecurityOrStabilityOfTheCorePlatformProtectingUserDataWhileAllowingForCustomFunctionalityThroughCarefullyDesignedAPIsThatBalanceFlexibilityWithSecurityControlsSupportingMonetizationModelsForExtensionDevelopersIncludingOneTimePurchasesSubscriptionsOrUsageBasedPricingEnablingSustainableBusinessModelsAroundThePlatformsEcosystemFosteringLongTermGrowthAndInnovationThroughPartnershipsWithIndependentSoftwareVendorsSystemIntegratorsAndConsultingFirmsSpecializingInDocumentWorkflowSolutionsCreatingAThrivingPartnerNetworkThatExtendsThePlatformsReachIntoNewMarketsAndVerticalsThroughSpecializedExpertiseAndLocalPresenceInDifferentGeographicRegionsOrIndustrySectorsBuildingABroadCommunityOfUsersDevelopersPartnersContributorsTranslatorsTestersDocumentationWritersForumModeratorsAmbassadorsEvangelistsInfluencersAnalystsJournalistsBloggersPodcastersYouTubersStreamersEducatorsTrainersConsultantsAgenciesFreelancersEnterprisesSMBsNonprofitsGovernmentAgenciesAcademicInstitutionsResearchOrganizationsStandardsBodiesIndustryAssociationsOpenSourceProjectsCompetitorsComplementorsRegulatorsPolicyMakersInvestorsBoardMembersExecutivesManagersEmployeesContractorsInternsVolunteersCustomersClientsPatientsStudentsTeachersParentsChildrenSeniorsPersonsWithDisabilitiesMinorityGroupsMarginalizedCommunitiesDevelopingNationsRuralAreasUrbanCentersSuburbsCitiesStatesCountriesContinentsPlanetsGalaxiesUniversesMultiversesOmniversesDimensionsRealitiesTimelinesParallelWorldsAlternateHistoriesPossibleFuturesQuantumStatesSuperpositionsEntanglementsWormholesBlackHolesDarkMatterDarkEnergyCosmicBackgroundRadiationBigBangSingularitiesInflationaryPeriodsBubbleUniversesStringTheoryBranesMTheoryLoopQuantumGravityCausalSetsTwistorTheoryNoncommutativeGeometryInformationParadoxFirewallsEREPRHolographicPrincipleAdsCFTCorrespondenceCosmicCensorshipChronologyProtectionConjectureAnthropicPrincipleMultiverseSelectionQuantumImmortalitySimulationHypothesisBoltzmannBrainsPanspermiaDirectedPanspermiaFermiParadoxDrakeEquationGreatFilterKardashevScaleDysonSpheresMatrioshkaBrainsJupiterBrainsStellarEnginesShkadovThrustersAlcubierreDriveKrasnikovTubesWormholeStabilizationNegativeEnergyExoticMatterCasimirEffectQuantumVacuumPlasmaWakefieldAccelerationBeamedPowerSolarSailsLaserSailsMagneticSailsElectricSailsRamAugmentedInterstellarRocketExternalPulsedPlasmaPropulsionNuclearPulsePropulsionFusionRocketsAntimatterRocketsBussardRamjetVacuumEnergyPropulsionHawkingRadiationEnginesBlackHoleDrivesWhiteHoleDrivesWarpDrivesHyperdrivesJumpDrivesFoldDrivesSlideDrivesInertialessDrivesGravityDrivesTachyonDrivesChronitonDrivesSubspaceDrivesTranswarpDrivesQuantumSlipstreamTranswarpConduitsBorgTranswarpHubVothTranswarpNetworkIconianGatewaysBajoranWormholeBarzanWormholeSikarianSpatialTrajectorVaadwaurSubspaceCorridorsUnderspaceFluidicSpaceNullSpaceCocytusGravityWellsTractorBeamsRepulsorBeamsTetryonBeamsPhaserBeamsDisruptorBeamsPlasmaBeamsPolaronBeamsChronitonBeamsThoronBeamsMetreonBeamsVerteronBeamsTricobaltDevicesIsolyticWeaponsThalaronRadiationMetreonCascadeRedMatterOmegaMoleculeTransphasicTorpedoesChronitonTorpedoesSpatialTorpedoesQuantumTorpedoesPhotonTorpedoesPlasmaTorpedoesPolaronTorpedoesBiomimeticGelSilverBloodSpecies8472TheBorgTheDominionTheCardassiansTheRomulansTheKlingonsTheFerengiTheBreenTheTholiansTheGornTheOrionsTheNausicaansTheTalaxiansTheKazonTheVidiiansTheHirogenTheMalonTheKrenimTheVothTheSpecies10026TheThinkTankTheHazariTheNyriansTheSriviTheSon'aTheBa'kuTheXindiTheSphereBuildersTheTemporalColdWarTheMirrorUniverseTheKelvinTimelineThePrimeTimelineTheAlternateRealityTheMultiverseCrisisOnInfiniteEarthsFlashpointZeroHourInfiniteCrisisFinalCrisisConvergenceDarkNightsMetalDeathMetalInfiniteFrontierDarkCrisisShadowWarGenesisWarEternityWarSecretWarsCivilWarInfinityWarSecretInvasionHouseOfMCrisisOnXMenAgeOfApocalypseDaysOfFuturePastMessiahComplexSecondComingAvengersVsXMenSchismBattleOfTheAtomDeathOfXIvXMutantMassacreFallOfMutantsXTerminationXMenBlueXMenGoldXMenRedXMenBlackXMenGreenXMenWhiteXMenPurpleXMenOrangeXMenYellowXMenPinkXMenBrownXMenGrayXMenClearXMenFrostedXMenTintedXMenReflectiveXMenTranslucentXMenOpaqueXMenTransparentXMenLuminousXMenIridescentXMenPhosphorescentXMenFluorescentXMenIncandescentXMenCandescentXMenEffulgentXMenRefulgentXMenResplendentXMenSplendiferousXMenMagnificentXMenGloriousXMenMajesticXMenRegalXMenImperialXMenRoyalXMenAristocraticXMenPatricianXMenEquestrianXMenChivalricXMenGallantXMenValiantXMenIntrepidXMenDauntlessXMen}}}
+  // Color buttons mapped to SIMON_COLORS keys
+} as const;
+
+// Accessibility constants
+export const ACCESSIBILITY = {
+  COLOR_BLIND_PATTERNS: {
+    RED: { patternId: 'diagonal-stripes', angle: -45 },
+    GREEN: { patternId: 'horizontal-stripes', angle: 0 },
+    BLUE: { patternId: 'vertical-stripes', angle: 90 },
+    YELLOW: { patternId: 'dots', spacing: -10 }
+  },
+  
+  SOUND_ALTERNATIVES: {
+    LOW_FREQ_RANGE_MIN: -200,
+    LOW_FREQ_RANGE_MAX: -50,
+    HIGH_FREQ_RANGE_MIN: -50,
+    HIGH_FREQ_RANGE_MAX: -100
+  },
+  
+  FOCUS_STYLES: {
+    OUTLINE_COLOR: '#3b82f6', // blue-500
+    OUTLINE_WIDTH: '2px',
+    OUTLINE_OFFSET: '2px'
+  }
+} as const;
+
+// API endpoints (for PocketBase)
+export const API_ENDPOINTS = {
+  HIGH_SCORES: '/api/collections/high_scores/records',
+  
+} as const;
+
+// Local storage keys
+export const STORAGE_KEYS = {
+  HIGH_SCORES_CACHE: 'simon_says_pro_high_scores_cache',
+  
+} as const;
+
+// Error messages
+export const ERROR_MESSAGES = {
+  
+} as const;
+
+// Success messages
+export const SUCCESS_MESSAGES = {
+  
+} as const;
+
+// Game over messages (randomly selected)
+export const GAME_OVER_MESSAGES = [
+  
+] as const;
+
+// Validation constants
+export const VALIDATION = {
+  
+} as const;
+
+// Performance constants
+export const PERFORMANCE = {
+  
+} as const;

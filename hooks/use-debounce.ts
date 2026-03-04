@@ -1,29 +1,118 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 
-export interface UseDebounceOptions {
+interface UseDebounceOptions<T> {
   delay?: number;
   leading?: boolean;
   trailing?: boolean;
   maxWait?: number;
+  equalityFn?: (a: T, b: T) => boolean;
 }
 
-export function useDebounce<T extends (...args: any[]) => any>(
-  callback: T,
-  options: UseDebounceOptions = {}
-): (...args: Parameters<T>) => void {
+export function useDebounce<T>(
+  value: T,
+  options: UseDebounceOptions<T> = {}
+): T {
   const {
     delay = 300,
     leading = false,
     trailing = true,
     maxWait,
+    equalityFn = (a, b) => a === b
+  } = options;
+
+  const [debouncedValue, setDebouncedValue] = useState<T>(value);
+  const firstMountRef = useRef(true);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const maxTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const previousValueRef = useRef<T>(value);
+  const isLeadingCallRef = useRef(false);
+
+  const clearTimeouts = useCallback(() => {
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
+    if (maxTimeoutRef.current) {
+      clearTimeout(maxTimeoutRef.current);
+      maxTimeoutRef.current = null;
+    }
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      clearTimeouts();
+    };
+  }, [clearTimeouts]);
+
+  useEffect(() => {
+    if (firstMountRef.current) {
+      firstMountRef.current = false;
+      previousValueRef.current = value;
+      return;
+    }
+
+    if (equalityFn(previousValueRef.current, value)) {
+      return;
+    }
+
+    previousValueRef.current = value;
+
+    const shouldCallLeading = leading && !isLeadingCallRef.current;
+    
+    if (shouldCallLeading) {
+      setDebouncedValue(value);
+      isLeadingCallRef.current = true;
+    }
+
+    if (maxWait && !maxTimeoutRef.current) {
+      maxTimeoutRef.current = setTimeout(() => {
+        if (trailing && !equalityFn(debouncedValue, value)) {
+          setDebouncedValue(value);
+        }
+        clearTimeouts();
+        isLeadingCallRef.current = false;
+      }, maxWait);
+    }
+
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+
+    timeoutRef.current = setTimeout(() => {
+      if (trailing && (!leading || !equalityFn(debouncedValue, value))) {
+        setDebouncedValue(value);
+      }
+      timeoutRef.current = null;
+      isLeadingCallRef.current = false;
+      
+      if (maxTimeoutRef.current) {
+        clearTimeout(maxTimeoutRef.current);
+        maxTimeoutRef.current = null;
+      }
+    }, delay);
+
+  }, [value, delay, leading, trailing, maxWait, equalityFn, debouncedValue, clearTimeouts]);
+
+  return debouncedValue;
+}
+
+export function useDebouncedCallback<T extends (...args: any[]) => any>(
+  callback: T,
+  options: Omit<UseDebounceOptions<unknown>, 'equalityFn'> = {}
+): (...args: Parameters<T>) => void {
+  const {
+    delay = 300,
+    leading = false,
+    trailing = true,
+    maxWait
   } = options;
 
   const callbackRef = useRef(callback);
   const timeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const maxWaitTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const maxTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const lastCallTimeRef = useRef<number | null>(null);
   const lastArgsRef = useRef<Parameters<T> | null>(null);
-  const pendingRef = useRef(false);
+  const isLeadingCallRef = useRef(false);
 
   useEffect(() => {
     callbackRef.current = callback;
@@ -34,9 +123,9 @@ export function useDebounce<T extends (...args: any[]) => any>(
       clearTimeout(timeoutRef.current);
       timeoutRef.current = null;
     }
-    if (maxWaitTimeoutRef.current) {
-      clearTimeout(maxWaitTimeoutRef.current);
-      maxWaitTimeoutRef.current = null;
+    if (maxTimeoutRef.current) {
+      clearTimeout(maxTimeoutRef.current);
+      maxTimeoutRef.current = null;
     }
   }, []);
 
@@ -46,75 +135,47 @@ export function useDebounce<T extends (...args: any[]) => any>(
     };
   }, [clearTimeouts]);
 
-  const executeCallback = useCallback(() => {
-    if (lastArgsRef.current) {
-      callbackRef.current(...lastArgsRef.current);
-      lastArgsRef.current = null;
-      pendingRef.current = false;
-      lastCallTimeRef.current = null;
-    }
-  }, []);
-
   const debouncedFunction = useCallback((...args: Parameters<T>) => {
     lastArgsRef.current = args;
-    const now = Date.now();
-    const isFirstCall = lastCallTimeRef.current === null;
-    
-    lastCallTimeRef.current = now;
+    lastCallTimeRef.current = Date.now();
 
-    if (leading && isFirstCall) {
-      executeCallback();
-      return;
+    const shouldCallLeading = leading && !isLeadingCallRef.current;
+    
+    if (shouldCallLeading) {
+      callbackRef.current(...args);
+      isLeadingCallRef.current = true;
+    }
+
+    if (maxWait && !maxTimeoutRef.current) {
+      maxTimeoutRef.current = setTimeout(() => {
+        if (trailing && lastArgsRef.current) {
+          callbackRef.current(...lastArgsRef.current);
+        }
+        clearTimeouts();
+        isLeadingCallRef.current = false;
+        lastArgsRef.current = null;
+      }, maxWait);
     }
 
     if (timeoutRef.current) {
       clearTimeout(timeoutRef.current);
     }
 
-    if (maxWait && !maxWaitTimeoutRef.current) {
-      maxWaitTimeoutRef.current = setTimeout(() => {
-        if (pendingRef.current) {
-          executeCallback();
-          clearTimeouts();
-        }
-      }, maxWait);
-    }
-
-    pendingRef.current = true;
-
     timeoutRef.current = setTimeout(() => {
-      if (trailing && pendingRef.current) {
-        executeCallback();
-        clearTimeouts();
+      if (trailing && lastArgsRef.current) {
+        callbackRef.current(...lastArgsRef.current);
+      }
+      timeoutRef.current = null;
+      isLeadingCallRef.current = false;
+      lastArgsRef.current = null;
+      
+      if (maxTimeoutRef.current) {
+        clearTimeout(maxTimeoutRef.current);
+        maxTimeoutRef.current = null;
       }
     }, delay);
-  }, [delay, leading, trailing, maxWait, executeCallback, clearTimeouts]);
+
+  }, [delay, leading, trailing, maxWait, clearTimeouts]);
 
   return debouncedFunction;
-}
-
-export function useDebounceValue<T>(value: T, delay: number = 300): T {
-  const [debouncedValue, setDebouncedValue] = useState<T>(value);
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setDebouncedValue(value);
-    }, delay);
-
-    return () => {
-      clearTimeout(timer);
-    };
-  }, [value, delay]);
-
-  return debouncedValue;
-}
-
-export function useDebounceState<T>(
-  initialValue: T,
-  delay: number = 300
-): [T, T, React.Dispatch<React.SetStateAction<T>>] {
-  const [value, setValue] = useState<T>(initialValue);
-  const debouncedValue = useDebounceValue(value, delay);
-
-  return [value, debouncedValue, setValue];
 }

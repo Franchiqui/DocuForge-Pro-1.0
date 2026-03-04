@@ -2,313 +2,324 @@
 
 'use client';
 
-import React, { memo, useState, useCallback, useEffect } from 'react';
-import { 
-  Bars3Icon, 
-  FolderIcon, 
-  DocumentIcon, 
-  PhotoIcon,
-  FontAwesomeIcon,
-  Cog6ToothIcon,
-  ArrowDownTrayIcon,
-  XMarkIcon,
-  MagnifyingGlassIcon,
-  UserCircleIcon,
-  BellIcon,
-  QuestionMarkCircleIcon
-} from '@heroicons/react/24/outline';
-import { 
-  Bars3BottomLeftIcon,
-  ChevronDownIcon,
-  SunIcon,
-  MoonIcon
-} from '@heroicons/react/20/solid';
+import React, { memo, useCallback, useEffect, useRef, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { cva, type VariantProps } from 'class-variance-authority';
+import { Power, Volume2, Trophy, HelpCircle, RotateCcw, Zap } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-const headerVariants = cva(
-  'sticky top-0 z-50 w-full border-b transition-all duration-300',
-  {
-    variants: {
-      variant: {
-        default: 'bg-gradient-to-r from-[#1a1a2e] to-[#16213e] border-[#0f3460]/50',
-        scrolled: 'bg-[#0f3460]/95 backdrop-blur-md border-[#0f3460] shadow-lg',
-      },
-    },
-    defaultVariants: {
-      variant: 'default',
-    },
-  }
-);
-
-interface HeaderProps extends VariantProps<typeof headerVariants> {
-  onMenuToggle?: () => void;
-  onExportClick?: () => void;
-  onSaveClick?: () => void;
-  onNewDocument?: () => void;
-  onOpenFile?: () => void;
-  documentName?: string;
-  wordCount?: number;
-  pageCount?: number;
-  currentPage?: number;
-  isDarkMode?: boolean;
-  onThemeToggle?: () => void;
+interface HeaderProps {
+  score: number;
+  level: number;
+  isPoweredOn: boolean;
+  isStrictMode: boolean;
+  difficulty: 'slow' | 'normal' | 'fast';
+  volume: number;
+  gameStatus: 'idle' | 'playing' | 'game-over';
+  onPowerToggle: () => void;
+  onRestart: () => void;
+  onDifficultyChange: (difficulty: 'slow' | 'normal' | 'fast') => void;
+  onVolumeChange: (volume: number) => void;
+  onStrictModeToggle: () => void;
+  onShowLeaderboard: () => void;
+  onShowTutorial: () => void;
 }
 
 const Header = memo(function Header({
-  onMenuToggle,
-  onExportClick,
-  onSaveClick,
-  onNewDocument,
-  onOpenFile,
-  documentName = 'Sin título',
-  wordCount = 0,
-  pageCount = 1,
-  currentPage = 1,
-  isDarkMode = true,
-  onThemeToggle,
+  score,
+  level,
+  isPoweredOn,
+  isStrictMode,
+  difficulty,
+  volume,
+  gameStatus,
+  onPowerToggle,
+  onRestart,
+  onDifficultyChange,
+  onVolumeChange,
+  onStrictModeToggle,
+  onShowLeaderboard,
+  onShowTutorial
 }: HeaderProps) {
-  const [isScrolled, setIsScrolled] = useState(false);
-  const [showSearch, setShowSearch] = useState(false);
-  const [showUserMenu, setShowUserMenu] = useState(false);
-  const [showNotifications, setShowNotifications] = useState(false);
-
+  const [isMobile, setIsMobile] = useState(false);
+  
   useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 10);
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
     };
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
-  const handleSearch = useCallback((e: React.FormEvent) => {
-    e.preventDefault();
-    setShowSearch(false);
-  }, []);
-
-  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if (e.key === 'Escape') setShowSearch(false);
-    if (e.ctrlKey && e.key === 'f') {
-      e.preventDefault();
-      setShowSearch(true);
-    }
-  }, []);
-
-  useEffect(() => {
-    document.addEventListener('keydown', handleKeyDown as any);
-    return () => document.removeEventListener('keydown', handleKeyDown as any);
-  }, [handleKeyDown]);
+  const difficultyLabels = {
+    slow: 'Lento',
+    normal: 'Normal',
+    fast: 'Rápido'
+  };
 
   return (
-    <header className={cn(headerVariants({ variant: isScrolled ? 'scrolled' : 'default' }))}>
-      <div className="mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex h-16 items-center justify-between">
-          {/* Logo y menú móvil */}
-          <div className="flex items-center">
-            <button
-              type="button"
-              onClick={onMenuToggle}
-              className="inline-flex items-center justify-center rounded-md p-2 text-gray-400 hover:bg-[#0f3460] hover:text-white focus:outline-none focus:ring-2 focus:ring-inset focus:ring-[#e94584] lg:hidden"
-              aria-label="Abrir menú"
-            >
-              <span className="sr-only">Abrir menú</span>
-              <Bars3Icon className="h-6 w-6" aria-hidden="true" />
-            </button>
-
-            <div className="flex items-center ml-4 lg:ml-0">
-              <div className="flex-shrink-0">
-                <Bars3BottomLeftIcon className="h-8 w-8 bg-gradient-to-r from-[#e94584] to-[#00b4d8] bg-clip-text text-transparent" />
+    <header className="w-full bg-gradient-to-b from-gray-900 to-gray-800 border-b border-gray-700 shadow-lg">
+      <div className="container mx-auto px-4 py-4">
+        <div className={cn(
+          "flex flex-col md:flex-row items-center justify-between gap-6",
+          "transition-all duration-300"
+        )}>
+          
+          {/* Logo and Title */}
+          <div className="flex items-center gap-4">
+            <div className="relative">
+              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-red-500 to-red-700 shadow-lg flex items-center justify-center">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-tr from-yellow-400 to-green-500 animate-pulse-slow" />
               </div>
-              <div className="ml-3">
-                <h1 className="text-xl font-bold text-white">DocuForge Pro</h1>
-                <p className="text-xs text-gray-400">Da forma a tus ideas</p>
-              </div>
+              <div className="absolute -inset-1 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 opacity-20 blur-sm" />
             </div>
-
-            {/* Navegación desktop */}
-            <nav className="hidden lg:ml-8 lg:flex lg:space-x-4">
-              <button
-                onClick={onNewDocument}
-                className="rounded-md px-3 py-2 text-sm font-medium text-gray-300 hover:bg-[#0f3460] hover:text-white transition-colors duration-200"
-                aria-label="Nuevo documento"
-              >
-                Nuevo
-              </button>
-              <button
-                onClick={onOpenFile}
-                className="rounded-md px-3 py-2 text-sm font-medium text-gray-300 hover:bg-[#0f3460] hover:text-white transition-colors duration-200"
-                aria-label="Abrir archivo"
-              >
-                Abrir
-              </button>
-              <button
-                onClick={onSaveClick}
-                className="rounded-md px-3 py-2 text-sm font-medium text-gray-300 hover:bg-[#0f3460] hover:text-white transition-colors duration-200"
-                aria-label="Guardar documento"
-              >
-                Guardar
-              </button>
-              <div className="relative">
-                <button
-                  onClick={onExportClick}
-                  className="rounded-md px-3 py-2 text-sm font-medium text-gray-300 hover:bg-[#0f3460] hover:text-white transition-colors duration-200 flex items-center"
-                  aria-label="Exportar documento"
-                  aria-haspopup="true"
-                >
-                  Exportar
-                  <ChevronDownIcon className="ml-1 h-4 w-4" aria-hidden="true" />
-                </button>
-              </div>
-            </nav>
+            
+            <div>
+              <h1 className="text-2xl md:text-3xl font-bold bg-gradient-to-r from-blue-400 to-green-400 bg-clip-text text-transparent">
+                SimonSays Pro
+              </h1>
+              <p className="text-sm text-gray-400 font-mono">
+                ¿Puedes seguir el ritmo de la luz?
+              </p>
+            </div>
           </div>
 
-          {/* Document info y búsqueda */}
-          <div className="flex items-center space-x-4">
-            {/* Información del documento - desktop */}
-            <div className="hidden lg:flex flex-col items-end">
-              <span className="text-sm font-medium text-white truncate max-w-xs">
-                {documentName}
-              </span>
-              <div className="flex space-x-3 text-xs text-gray-400">
-                <span>{wordCount.toLocaleString()} palabras</span>
-                <span>Página {currentPage} de {pageCount}</span>
+          {/* Game Status Display */}
+          <div className="flex flex-col items-center gap-2">
+            <div className="relative bg-gray-900 border-2 border-gray-700 rounded-xl px-6 py-3 min-w-[200px]">
+              <div className="absolute -top-2 left-1/2 transform -translate-x-1/2 bg-gray-800 px-3 py-1 rounded-lg border border-gray-600">
+                <span className="text-xs font-mono text-gray-300">ESTADO</span>
+              </div>
+              
+              <div className="flex items-center justify-between gap-6">
+                <div className="text-center">
+                  <div className="text-xs text-gray-400 font-mono">PUNTUACIÓN</div>
+                  <div className="text-2xl font-bold text-green-400 font-mono tracking-wider">
+                    {score.toString().padStart(4, '0')}
+                  </div>
+                </div>
+                
+                <div className="h-10 w-px bg-gray-700" />
+                
+                <div className="text-center">
+                  <div className="text-xs text-gray-400 font-mono">NIVEL</div>
+                  <div className="text-2xl font-bold text-blue-400 font-mono tracking-wider">
+                    {level.toString().padStart(2, '0')}
+                  </div>
+                </div>
+              </div>
+              
+              {/* Status Indicator */}
+              <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2">
+                <motion.div
+                  animate={{
+                    backgroundColor: gameStatus === 'playing' ? '#10B981' : 
+                                   gameStatus === 'game-over' ? '#EF4444' : '#6B7280'
+                  }}
+                  className="w-3 h-3 rounded-full border border-gray-600"
+                />
               </div>
             </div>
+          </div>
 
-            {/* Búsqueda */}
-            <div className="relative">
-              <AnimatePresence>
-                {showSearch ? (
-                  <motion.div
-                    initial={{ width: 40 }}
-                    animate={{ width: 240 }}
-                    exit={{ width: 40 }}
-                    className="overflow-hidden"
-                  >
-                    <form onSubmit={handleSearch} className="relative">
-                      <input
-                        type="search"
-                        placeholder="Buscar en documento..."
-                        className="w-full rounded-md border border-[#0f3460] bg-[#0f3460]/50 py-2 pl-10 pr-4 text-sm text-white placeholder-gray-400 focus:border-[#e94584] focus:outline-none focus:ring-1 focus:ring-[#e94584]"
-                        autoFocus
-                        onBlur={() => setShowSearch(false)}
-                      />
-                      <MagnifyingGlassIcon className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
-                    </form>
-                  </motion.div>
-                ) : (
-                  <button
-                    onClick={() => setShowSearch(true)}
-                    className="rounded-md p-2 text-gray-400 hover:bg-[#0f3460] hover:text-white focus:outline-none focus:ring-2 focus:ring-inset focus:ring-[#e94584]"
-                    aria-label="Buscar"
-                  >
-                    <MagnifyingGlassIcon className="h-5 w-5" />
-                  </button>
-                )}
-              </AnimatePresence>
-            </div>
-
-            {/* Notificaciones */}
-            <div className="relative">
-              <button
-                type="button"
-                onClick={() => setShowNotifications(!showNotifications)}
-                className="rounded-md p-2 text-gray-400 hover:bg-[#0f3460] hover:text-white focus:outline-none focus:ring-2 focus:ring-inset focus:ring-[#e94584] relative"
-                aria-label="Notificaciones"
-              >
-                <BellIcon className="h-5 w-5" />
-                <span className="absolute -top-1 -right-1 h-3 w-3 rounded-full bg-gradient-to-r from-[#e94584] to-[#00b4d8]"></span>
-              </button>
-            </div>
-
-            {/* Ayuda */}
+          {/* Control Panel */}
+          <div className="flex flex-wrap items-center justify-center gap-4">
+            
+            {/* Power Button */}
             <button
-              type="button"
-              className="hidden md:inline-flex rounded-md p-2 text-gray-400 hover:bg-[#0f3460] hover:text-white focus:outline-none focus:ring-2 focus:ring-inset focus:ring-[#e94584]"
-              aria-label="Ayuda"
+              onClick={onPowerToggle}
+              aria-label={isPoweredOn ? "Apagar" : "Encender"}
+              className={cn(
+                "relative p-3 rounded-xl transition-all duration-200",
+                "focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800",
+                isPoweredOn 
+                  ? "bg-gradient-to-br from-green-600 to-green-800 shadow-lg shadow-green-900/30" 
+                  : "bg-gradient-to-br from-gray-700 to-gray-900 border border-gray-600"
+              )}
             >
-              <QuestionMarkCircleIcon className="h-5 w-5" />
-            </button>
-
-            {/* Tema */}
-            <button
-              type="button"
-              onClick={onThemeToggle}
-              className="rounded-md p-2 text-gray-400 hover:bg-[#0f3460] hover:text-white focus:outline-none focus:ring-2 focus:ring-inset focus:ring-[#e94584]"
-              aria-label={isDarkMode ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
-            >
-              {isDarkMode ? (
-                <SunIcon className="h-5 w-5" />
-              ) : (
-                <MoonIcon className="h-5 w-5" />
+              <Power className={cn(
+                "w-6 h-6 transition-colors",
+                isPoweredOn ? "text-green-200" : "text-gray-400"
+              )} />
+              {isPoweredOn && (
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale: [0, 1.2, 1] }}
+                  className="absolute inset-0 rounded-xl bg-green-500/20"
+                />
               )}
             </button>
 
-            {/* Perfil de usuario */}
-            <div className="relative">
-              <button
-                type="button"
-                onClick={() => setShowUserMenu(!showUserMenu)}
-                className="flex items-center rounded-full p-1 text-gray-400 hover:text-white focus:outline-none focus:ring-2 focus:ring-inset focus:ring-[#e94584]"
-                aria-label="Menú de usuario"
-                aria-haspopup="true"
-              >
-                <UserCircleIcon className="h-8 w-8" />
-              </button>
+            {/* Restart Button */}
+            <button
+              onClick={onRestart}
+              disabled={!isPoweredOn}
+              aria-label="Reiniciar juego"
+              className={cn(
+                "relative p-3 rounded-xl transition-all duration-200",
+                "focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-gray-800",
+                isPoweredOn
+                  ? "bg-gradient-to-br from-blue-600 to-blue-800 hover:from-blue-500 hover:to-blue-700 shadow-lg shadow-blue-900/30"
+                  : "bg-gradient-to-br from-gray-700 to-gray-900 border border-gray-600 cursor-not-allowed"
+              )}
+            >
+              <RotateCcw className={cn(
+                "w-6 h-6",
+                isPoweredOn ? "text-blue-200" : "text-gray-400"
+              )} />
+            </button>
 
-              <AnimatePresence>
-                {showUserMenu && (
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.95 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.95 }}
-                    className="absolute right-0 mt-2 w-48 origin-top-right rounded-md bg-[#0f3460] py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z -50"
-                    role="menu"
-                  >
-                    <a
-                      href="#"
-                      className="block px-4 py-2 text-sm text-gray-300 hover:bg-[#16213e] hover:text-white"
-                      role="menuitem"
-                    >
-                      Tu perfil
-                    </a>
-                    <a
-                      href="#"
-                      className="block px-4 py -2 text-sm text-gray -300 hover :bg -[#16213e] hover :text -white "
-                      role ="menuitem "
-                    >
-                      Configuración
-                    </a >
-                    <a 
-                      href ="#" 
-                      className ="block px -4 py -2 text -sm text -gray -300 hover :bg -[#16213e] hover :text -white "
-                      role ="menuitem "
-                    >
-                      Cerrar sesión
-                    </a >
-                  </motion.div >
+            {/* Difficulty Selector */}
+            <div className="relative group">
+              <select
+                value={difficulty}
+                onChange={(e) => onDifficultyChange(e.target.value as 'slow' | 'normal' | 'fast')}
+                disabled={!isPoweredOn}
+                aria-label="Seleccionar dificultad"
+                className={cn(
+                  "appearance-none pl1 pr -10 py1 rounded-xl border transition-all duration -200",
+                  "focus:outline-none focus:ring -2 focus:ring-offset -2 focus:ring-offset -gray -800",
+                  isPoweredOn
+                    ? "bg-gradient-to-br from-purple -700 to-purple -900 border-purple -600 text-white shadow-lg shadow-purple -900/30"
+                    : "bg-gradient-to-br from-gray -700 to-gray -900 border-gray -600 text-gray -400 cursor-not-allowed"
                 )}
-              </AnimatePresence >
-            </div >
-          </div >
-        </div >
+              >
+                {Object.entries(difficultyLabels).map(([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+              <Zap className={cn(
+                "absolute right -3 top -1/2 transform -translate-y -1/2 w -4 h -4 pointer-events-none",
+                isPoweredOn ? "text-yellow -400" : "text-gray -500"
+              )} />
+            </div>
 
-        {/* Barra de estado móvil */}
-        <div className ="lg:hidden border-t border-[#0f3460]/50 mt -2 pt -2 ">
-          <div className ="flex items-center justify-between text-xs text-gray -400 ">
-            <span className ="truncate ">{documentName}</span >
-            <div className ="flex space-x -4 ">
-              <span >{wordCount.toLocaleString()} palabras</span >
-              <span >Pág {currentPage}/{pageCount}</span >
-            </div >
-          </div >
-        </div >
-      </div >
-    </header >
+            {/* Volume Control */}
+            <div className="flex items-center gap -2">
+              <Volume2 className={cn(
+                "w -5 h -5",
+                isPoweredOn ? "text-gray -300" : "text-gray -500"
+              )} />
+              <input
+                type="range"
+                min="0"
+                max="100"
+                value={volume}
+                onChange={(e) => onVolumeChange(parseInt(e.target.value))}
+                disabled={!isPoweredOn}
+                aria-label="Control de volumen"
+                className={cn(
+                  "w -24 accent-green -500 transition-opacity",
+                  !isPoweredOn && "opacity -50 cursor-not-allowed"
+                )}
+              />
+            </div>
+
+            {/* Strict Mode Toggle */}
+            <button
+              onClick={onStrictModeToggle}
+              disabled={!isPoweredOn}
+              aria-label={`Modo estricto ${isStrictMode ? 'activado' : 'desactivado'}`}
+              className={cn(
+                "relative px -4 py -2 rounded-xl transition-all duration -200",
+                "focus:outline-none focus:ring -2 focus:ring-offset -2 focus:ring-offset -gray -800",
+                isStrictMode && isPoweredOn
+                  ? "bg-gradient-to-br from-red -600 to-red -800 shadow-lg shadow-red -900/30 text-white"
+                  : isPoweredOn
+                    ? "bg-gradient-to-br from-gray -700 to-gray -900 border border-gray -600 text-gray -300 hover:text-white"
+                    : "bg-gradient-to-br from-gray -700 to-gray -900 border border-gray -600 text-gray -400 cursor-not-allowed"
+              )}
+            >
+              <span className="text-sm font-semibold">STRICT</span>
+              {isStrictMode && isPoweredOn && (
+                <motion.div
+                  initial={{ scale: 0 }}
+                  animate={{ scale: [0, 1.2, 1] }}
+                  className="absolute inset -0 rounded-xl bg-red -500/20"
+                />
+              )}
+            </button>
+
+            {/* Leaderboard Button */}
+            <button
+              onClick={onShowLeaderboard}
+              aria-label="Ver tabla de clasificación"
+              className={cn(
+                "p -3 rounded-xl transition-all duration -200",
+                "focus:outline-none focus:ring -2 focus:ring-offset -2 focus:ring-offset -gray -800",
+                "bg-gradient-to-br from-yellow -700 to-yellow -900 hover:from-yellow -600 hover:to-yellow -800",
+                "shadow-lg shadow-yellow -900/30"
+              )}
+            >
+              <Trophy className="w -6 h -6 text-yellow -200" />
+            </button>
+
+            {/* Tutorial Button */}
+            <button
+              onClick={onShowTutorial}
+              aria-label="Mostrar tutorial"
+              className={cn(
+                "p -3 rounded-xl transition-all duration -200",
+                "focus:outline-none focus:ring -2 focus:ring-offset -2 focus:ring-offset -gray -800",
+                "bg-gradient-to-br from-blue -700 to-blue -900 hover:from-blue -600 hover:to-blue -800",
+                "shadow-lg shadow-blue -900/30"
+              )}
+            >
+              <HelpCircle className="w -6 h -6 text-blue -200" />
+            </button>
+
+          </div>
+
+        </div>
+
+        {/* Mobile Controls (stacked below) */}
+        {isMobile && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mt -6 pt -6 border-t border-gray -700"
+          >
+            <div className="flex flex-wrap items-center justify-center gap -3">
+              <span className="text-xs text-gray -400 font-mono px -3 py1 bg-gray -800 rounded-full">
+                CONTROLES
+              </span>
+              
+              {/* Quick Stats */}
+              <div className="flex items-center gap4">
+                <div className="flex items-center gap2">
+                  <div className={cn(
+                    "w2 h2 rounded-full",
+                    gameStatus === 'playing' ? "bg-green500 animate-pulse" :
+                    gameStatus === 'game-over' ? "bg-red500" : "bg-gray500"
+                  )} />
+                  <span className="text-xs text-gray300">
+                    {gameStatus === 'playing' ? 'JUGANDO' :
+                     gameStatus === 'game-over' ? 'GAME OVER' : 'LISTO'}
+                  </span>
+                </div>
+                
+                <div className="h4 w-px bg-gray600" />
+                
+                <div className="text-xs text-gray300">
+                  Dificultad: <span className="font-semibold text-purple300">{difficultyLabels[difficulty]}</span>
+                </div>
+                
+                {isStrictMode && (
+                  <>
+                    <div className="h4 w-px bg-gray600" />
+                    <span className="text-xs font-semibold text-red400">MODO ESTRICTO</span>
+                  </>
+                )}
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </div>
+    </header>
   );
 });
-
-Header.displayName = 'Header';
 
 export default Header;

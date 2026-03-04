@@ -2,30 +2,22 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 
-export type LocalStorageValue<T> = T | null;
+type LocalStorageValue<T> = T | null;
 
-export interface UseLocalStorageOptions<T> {
+interface UseLocalStorageOptions<T> {
   serializer?: (value: T) => string;
   deserializer?: (value: string) => T;
   onError?: (error: Error) => void;
 }
 
-export interface UseLocalStorageReturn<T> {
+interface UseLocalStorageReturn<T> {
   value: LocalStorageValue<T>;
-  setValue: (newValue: T | ((prev: LocalStorageValue<T>) => T)) => void;
+  setValue: (value: T | ((prev: LocalStorageValue<T>) => T)) => void;
   removeValue: () => void;
   isPersistent: boolean;
 }
 
-const defaultSerializer = <T>(value: T): string => {
-  return JSON.stringify(value);
-};
-
-const defaultDeserializer = <T>(value: string): T => {
-  return JSON.parse(value);
-};
-
-const isBrowser = typeof window !== 'undefined';
+const IS_SERVER = typeof window === 'undefined';
 
 export function useLocalStorage<T>(
   key: string,
@@ -33,19 +25,19 @@ export function useLocalStorage<T>(
   options: UseLocalStorageOptions<T> = {}
 ): UseLocalStorageReturn<T> {
   const {
-    serializer = defaultSerializer,
-    deserializer = defaultDeserializer,
-    onError
+    serializer = JSON.stringify,
+    deserializer = JSON.parse,
+    onError = (error) => console.error(`useLocalStorage error for key "${key}":`, error),
   } = options;
 
   const [storedValue, setStoredValue] = useState<LocalStorageValue<T>>(() => {
-    if (!isBrowser) return initialValue;
+    if (IS_SERVER) return initialValue;
 
     try {
       const item = window.localStorage.getItem(key);
       return item ? deserializer(item) : initialValue;
     } catch (error) {
-      onError?.(error as Error);
+      onError(error as Error);
       return initialValue;
     }
   });
@@ -59,279 +51,189 @@ export function useLocalStorage<T>(
   }, [key]);
 
   useEffect(() => {
-    if (!isBrowser) return;
-
-    const testKey = `__test_persistence__${Date.now()}`;
-    try {
-      window.localStorage.setItem(testKey, 'test');
-      window.localStorage.removeItem(testKey);
-      setIsPersistent(true);
-    } catch {
-      setIsPersistent(false);
-    }
-  }, []);
+    initialValueRef.current = initialValue;
+  }, [initialValue]);
 
   const setValue = useCallback(
-    (newValue: T | ((prev: LocalStorageValue<T>) => T)) => {
-      if (!isBrowser || !isPersistent) return;
+    (value: T | ((prev: LocalStorageValue<T>) => T)) => {
+      if (IS_SERVER) return;
 
       try {
-        const valueToStore =
-          newValue instanceof Function
-            ? newValue(storedValue)
-            : newValue;
-
+        const valueToStore = value instanceof Function ? value(storedValue) : value;
         setStoredValue(valueToStore);
 
-        const serializedValue = serializer(valueToStore);
-        window.localStorage.setItem(keyRef.current, serializedValue);
-
-        window.dispatchEvent(
-          new StorageEvent('storage', {
-            key: keyRef.current,
-            newValue: serializedValue,
-            storageArea: window.localStorage
-          })
-        );
+        window.localStorage.setItem(keyRef.current, serializer(valueToStore));
+        setIsPersistent(true);
       } catch (error) {
-        onError?.(error as Error);
+        onError(error as Error);
+        setIsPersistent(false);
       }
     },
-    [storedValue, isPersistent, serializer, onError]
+    [storedValue, serializer, onError]
   );
 
   const removeValue = useCallback(() => {
-    if (!isBrowser) return;
+    if (IS_SERVER) return;
 
     try {
       window.localStorage.removeItem(keyRef.current);
       setStoredValue(initialValueRef.current);
-
-      window.dispatchEvent(
-        new StorageEvent('storage', {
-          key: keyRef.current,
-          newValue: null,
-          storageArea: window.localStorage
-        })
-      );
+      setIsPersistent(true);
     } catch (error) {
-      onError?.(error as Error);
+      onError(error as Error);
+      setIsPersistent(false);
     }
   }, [onError]);
 
   useEffect(() => {
-    if (!isBrowser) return;
+    if (IS_SERVER) return;
 
     const handleStorageChange = (event: StorageEvent) => {
       if (event.key === keyRef.current && event.storageArea === window.localStorage) {
         try {
-          const newValue = event.newValue
-            ? deserializer(event.newValue)
-            : initialValueRef.current;
+          const newValue = event.newValue ? deserializer(event.newValue) : initialValueRef.current;
           setStoredValue(newValue);
         } catch (error) {
-          onError?.(error as Error);
+          onError(error as Error);
         }
+      }
+    };
+
+    const testPersistence = () => {
+      try {
+        const testKey = `__persistence_test_${Date.now()}__`;
+        window.localStorage.setItem(testKey, 'test');
+        window.localStorage.removeItem(testKey);
+        setIsPersistent(true);
+      } catch {
+        setIsPersistent(false);
       }
     };
 
     window.addEventListener('storage', handleStorageChange);
-    return () => window.removeEventListener('storage', handleStorageChange);
-  }, [deserializer, onError]);
+    window.addEventListener('focus', testPersistence);
 
-  useEffect(() => {
-    if (!isBrowser || !isPersistent) return;
+    testPersistence();
 
-    const handleBeforeUnload = () => {
-      try {
-        if (storedValue !== null) {
-          const serializedValue = serializer(storedValue);
-          window.localStorage.setItem(keyRef.current, serializedValue);
-        }
-      } catch (error) {
-        onError?.(error as Error);
-      }
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('focus', testPersistence);
     };
-
-    window.addEventListener('beforeunload', handleBeforeUnload);
-    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
-  }, [storedValue, isPersistent, serializer, onError]);
+  }, [deserializer, onError]);
 
   return {
     value: storedValue,
     setValue,
     removeValue,
-    isPersistent
+    isPersistent,
   };
 }
 
-export function useLocalStorageWithSchema<T>(
-  key: string,
-  initialValue: T,
-  schema?: { parse: (value: unknown) => T },
-  options?: UseLocalStorageOptions<T>
-): UseLocalStorageReturn<T> {
-  const result = useLocalStorage<T>(key, initialValue, options);
+export function useLocalStorageGameState() {
+  const { value: highScore, setValue: setHighScore } = useLocalStorage<number>('simon-high-score', 0);
+  const { value: playerName, setValue: setPlayerName } = useLocalStorage<string>('simon-player-name', '');
+  const { value: gameSettings, setValue: setGameSettings } = useLocalStorage<{
+    difficulty: 'slow' | 'normal' | 'fast';
+    volume: number;
+    strictMode: boolean;
+    colorBlindMode: boolean;
+    soundEnabled: boolean;
+  }>('simon-game-settings', {
+    difficulty: 'normal',
+    volume: 0.7,
+    strictMode: false,
+    colorBlindMode: false,
+    soundEnabled: true,
+  });
 
-  useEffect(() => {
-    if (schema && result.value !== null) {
-      try {
-        schema.parse(result.value);
-      } catch (error) {
-        result.setValue(initialValue);
-        options?.onError?.(error as Error);
+  const { value: recentGames, setValue: setRecentGames } = useLocalStorage<
+    Array<{
+      level: number;
+      score: number;
+      timestamp: number;
+      sequenceLength: number;
+    }>
+  >('simon-recent-games', []);
+
+  const addRecentGame = useCallback(
+    (gameData: { level: number; score: number; sequenceLength: number }) => {
+      setRecentGames((prev) => {
+        const newGames = [
+          { ...gameData, timestamp: Date.now() },
+          ...(prev || []),
+        ].slice(0, 10);
+        return newGames;
+      });
+    },
+    [setRecentGames]
+  );
+
+  const updateHighScore = useCallback(
+    (score: number) => {
+      if (score > (highScore || 0)) {
+        setHighScore(score);
+        return true;
       }
-    }
-  }, [result.value, schema, initialValue, result, options]);
+      return false;
+    },
+    [highScore, setHighScore]
+  );
 
-  return result;
-}
+  const updateGameSetting = useCallback(
+    <K extends keyof typeof gameSettings>(
+      key: K,
+      value: typeof gameSettings[K]
+    ) => {
+      if (!gameSettings) return;
+      
+      setGameSettings({
+        ...gameSettings,
+        [key]: value,
+      });
+    },
+    [gameSettings, setGameSettings]
+  );
 
-export function useLocalStorageBatch() {
-  const getMultiple = useCallback(<T>(keys: string[]): Record<string, T | null> => {
-    if (!isBrowser) return {};
-
-    const result: Record<string, T | null> = {};
-    keys.forEach(key => {
-      try {
-        const item = window.localStorage.getItem(key);
-        result[key] = item ? JSON.parse(item) : null;
-      } catch {
-        result[key] = null;
-      }
-    });
-    return result;
-  }, []);
-
-  const setMultiple = useCallback(<T>(items: Record<string, T>): void => {
-    if (!isBrowser) return;
-
-    Object.entries(items).forEach(([key, value]) => {
-      try {
-        window.localStorage.setItem(key, JSON.stringify(value));
-      } catch (error) {
-        console.error(`Failed to set ${key} in localStorage:`, error);
-      }
-    });
-
-    Object.keys(items).forEach(key => {
-      window.dispatchEvent(
-        new StorageEvent('storage', {
-          key,
-          newValue: JSON.stringify(items[key]),
-          storageArea: window.localStorage
-        })
-      );
-    });
-  }, []);
-
-  const removeMultiple = useCallback((keys: string[]): void => {
-    if (!isBrowser) return;
-
-    keys.forEach(key => {
-      try {
-        window.localStorage.removeItem(key);
-        window.dispatchEvent(
-          new StorageEvent('storage', {
-            key,
-            newValue: null,
-            storageArea: window.localStorage
-          })
-        );
-      } catch (error) {
-        console.error(`Failed to remove ${key} from localStorage:`, error);
-      }
-    });
-  }, []);
-
-  const clearAll = useCallback((): void => {
-    if (!isBrowser) return;
+  const clearAllGameData = useCallback(() => {
+    if (typeof window === 'undefined') return;
 
     try {
-      const keys = Object.keys(window.localStorage);
-      window.localStorage.clear();
+      const keysToRemove = [
+        'simon-high-score',
+        'simon-player-name',
+        'simon-game-settings',
+        'simon-recent-games',
+      ];
+
+      keysToRemove.forEach((key) => window.localStorage.removeItem(key));
       
-      keys.forEach(key => {
-        window.dispatchEvent(
-          new StorageEvent('storage', {
-            key,
-            newValue: null,
-            storageArea: window.localStorage
-          })
-        );
-      });
+      window.location.reload();
     } catch (error) {
-      console.error('Failed to clear localStorage:', error);
+      console.error('Failed to clear game data:', error);
     }
   }, []);
 
   return {
-    getMultiple,
-    setMultiple,
-    removeMultiple,
-    clearAll
-  };
-}
-
-export function useLocalStorageQuota() {
-  const [quotaInfo, setQuotaInfo] = useState<{
-    used: number;
-    remaining: number;
-    percentage: number;
-  } | null>(null);
-
-  useEffect(() => {
-    if (!isBrowser || !('storage' in navigator)) return;
-
-    const estimateQuota = async () => {
-      try {
-        if ('estimate' in navigator.storage) {
-          const { usage, quota } = await navigator.storage.estimate();
-          
-          if (usage !== undefined && quota !== undefined) {
-            setQuotaInfo({
-              used: usage,
-              remaining: quota - usage,
-              percentage: Math.round((usage / quota) * 100)
-            });
-          }
-        }
-      } catch (error) {
-        console.error('Failed to estimate storage quota:', error);
-      }
-    };
-
-    estimateQuota();
+    highScore: highScore || 0,
+    playerName: playerName || '',
+    gameSettings: gameSettings || {
+      difficulty: 'normal',
+      volume: 0.7,
+      strictMode: false,
+      colorBlindMode: false,
+      soundEnabled: true,
+    },
+    recentGames: recentGames || [],
     
-    const intervalId = setInterval(estimateQuota, 30000);
-    return () => clearInterval(intervalId);
-  }, []);
-
-  const clearExcessData = useCallback((targetPercentage: number = 80): void => {
-    if (!isBrowser || !quotaInfo || quotaInfo.percentage <= targetPercentage) return;
-
-    try {
-      const keysToRemove: string[] = [];
-      
-      for (let i = 0; i < window.localStorage.length; i++) {
-        const key = window.localStorage.key(i);
-        if (key && key.startsWith('docuforge_')) {
-          keysToRemove.push(key);
-        }
-      }
-
-      keysToRemove.slice(0, Math.ceil(keysToRemove.length * 0.3)).forEach(key => {
-        window.localStorage.removeItem(key);
-      });
-
-      setQuotaInfo(prev => prev ? {
-        ...prev,
-        percentage: Math.max(0, prev.percentage - 20)
-      } : null);
-    } catch (error) {
-      console.error('Failed to clear excess localStorage data:', error);
-    }
-  }, [quotaInfo]);
-
-  return { quotaInfo, clearExcessData };
+    setHighScore,
+    setPlayerName,
+    setGameSettings,
+    
+    addRecentGame,
+    updateHighScore,
+    updateGameSetting,
+    clearAllGameData,
+    
+    isPersistent: true,
+  };
 }

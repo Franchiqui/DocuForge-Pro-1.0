@@ -35,18 +35,8 @@ export default function AuthStatus({ paths }: AuthStatusProps) {
   const { data: session, status } = useSession();
   const pathname = usePathname();
   
-  // Valores por defecto completos en caso de que authPaths no esté disponible
-  const defaultPaths: AuthStatusPaths = {
-    login: '/auth/login',
-    register: '/auth/register',
-    home: '/',
-    profile: '/profile',
-    settings: '/settings',
-  };
-  
   // Combinar rutas personalizadas con las predeterminadas
   const resolvedPaths: AuthStatusPaths = {
-    ...defaultPaths,
     ...authPaths,
     ...paths,
   };
@@ -67,7 +57,7 @@ export default function AuthStatus({ paths }: AuthStatusProps) {
     const isRegisterPage = pathname === resolvedPaths.register;
 
     return (
-      <div className="flex items-center gap-3">
+      <div className="flex items-center gap-2">
         {!isLoginPage && (
           <Button asChild variant="ghost" size="sm">
             <Link href={resolvedPaths.login}>
@@ -88,26 +78,10 @@ export default function AuthStatus({ paths }: AuthStatusProps) {
 
   // Usuario autenticado
   const user = session.user;
-  
-  // Validar que user existe
-  if (!user) {
-    return (
-      <div className="flex items-center gap-3">
-        <Button 
-          variant="ghost" 
-          size="sm"
-          onClick={() => signOut({ callbackUrl: resolvedPaths.home })}
-        >
-          Sesión inválida
-        </Button>
-      </div>
-    );
-  }
-  
   const userInitials = user?.name
     ? user.name
         .split(' ')
-        .map(n => n[0] || '')
+        .map(n => n[0])
         .join('')
         .toUpperCase()
         .slice(0, 2)
@@ -127,9 +101,9 @@ export default function AuthStatus({ paths }: AuthStatusProps) {
         <DropdownMenuContent className="w-56" align="end" forceMount>
           <DropdownMenuLabel className="font-normal">
             <div className="flex flex-col space-y-1">
-              <p className="text-sm font-medium leading-none">{user?.name || 'Usuario'}</p>
+              <p className="text-sm font-medium leading-none">{user?.name}</p>
               <p className="text-xs leading-none text-muted-foreground">
-                {user?.email || 'No email'}
+                {user?.email}
               </p>
             </div>
           </DropdownMenuLabel>
@@ -154,7 +128,7 @@ export default function AuthStatus({ paths }: AuthStatusProps) {
           </DropdownMenuItem>
           <DropdownMenuSeparator />
           <DropdownMenuItem
-            className="cursor-pointer text-red-600 focus:text-red-600 dark:text-red-400 dark:focus:text-red-400"
+            className="cursor-pointer text-red-600 focus:text-red-600 dark:text-red-400"
             onClick={() => signOut({ callbackUrl: resolvedPaths.home })}
           >
             <LogOut className="mr-2 h-4 w-4" />
